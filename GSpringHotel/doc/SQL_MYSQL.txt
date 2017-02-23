@@ -1,0 +1,338 @@
+DROP DATABASE IF EXISTS springhotel;
+CREATE DATABASE IF NOT EXISTS springhotel CHARACTER SET UTF8 COLLATE UTF8_GENERAL_CI;
+
+USE springhotel;
+
+GRANT ALL PRIVILEGES ON springhotel.* TO root@localhost IDENTIFIED BY 'mysql';
+
+DROP TABLE IF EXISTS shotel_reserve;
+
+DROP TABLE IF EXISTS shotel_room_file;
+DROP TABLE IF EXISTS shotel_room_eval;
+DROP TABLE IF EXISTS shotel_room;
+DROP TABLE IF EXISTS shotel_room_type;
+
+DROP TABLE IF EXISTS shotel_board_reply;
+DROP TABLE IF EXISTS shotel_board_file;
+DROP TABLE IF EXISTS shotel_board;
+
+DROP TABLE IF EXISTS shotel_admin;
+DROP TABLE IF EXISTS shotel_user;
+
+#
+# 로그인
+#
+
+CREATE TABLE shotel_user (
+    id          INT(11) NOT NULL AUTO_INCREMENT, 
+    account     VARCHAR(20) NOT NULL, 
+    password VARCHAR(20) NOT NULL,  
+    nickname    VARCHAR(20) NOT NULL,
+    birthday    DATE NOT NULL,       
+    zipcode     VARCHAR(5) NOT NULL, 
+    address1    VARCHAR(200) NOT NULL,
+    address2    VARCHAR(200) NOT NULL,
+    email       VARCHAR(80) NOT NULL, 
+    emailconfirm    INT(1) NOT NULL,  
+    tel         VARCHAR(11) NOT NULL, 
+    CONSTRAINT shotel_user_pk PRIMARY KEY (id)
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+# -------------------------------
+# -- 관리자 목록
+# -------------------------------
+
+
+CREATE TABLE shotel_admin (
+    id          INT(11) NOT NULL AUTO_INCREMENT,
+    userid      INT(11) NOT NULL,  
+    lv          INT(11) NOT NULL,  
+    CONSTRAINT shotel_admin_pk PRIMARY KEY (id),
+    CONSTRAINT shotel_admin_user_id_fk FOREIGN KEY (userid) REFERENCES shotel_user (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+# -------------------------------
+# -- 쿼리 샘플
+# -------------------------------
+
+INSERT INTO shotel_user(account, password, nickname, birthday, zipcode, address1, address2, email, emailconfirm, tel)
+             VALUES ('admin', '1234', '관리자', now(), '12345', '하늘시', '천당구 영생동', 'admin@shotel.com', 0, '01012345678');
+INSERT INTO shotel_user(account, password, nickname, birthday, zipcode, address1, address2, email, emailconfirm, tel)
+             VALUES ('hb', '1234', '한빛', now(), '12345', '서울시', '마포구', 'hb@hanbit.com', 0, '0105551111');
+
+             
+INSERT INTO shotel_admin(userid, lv) VALUES (1, 1);
+
+# -- INSERT INTO shotel_user VALUES (shotel_user_seq.nextval, '아이디', '비밀번호', '닉네임', '생일', '우편번호', '주소1', '주소2', '이메일', 수신동의0/1, '연락처 00000000000');
+# -- INSERT INTO shotel_admin VALUES (shotel_admin_seq.nextval, 사용자고유번호, 관리자레벨);
+
+commit;
+
+
+# --------------------------------------------------------------------------------------------------------
+# -- 공지사항, 이벤트 (게시판)
+# -------------------------------
+
+CREATE TABLE shotel_board (
+    id          INT(11) NOT NULL AUTO_INCREMENT,      
+    userid      INT(11) NOT NULL,   
+    type        INT(11) NOT NULL,    
+    title       VARCHAR(40) NOT NULL, 
+    content     VARCHAR(400) NOT NULL,
+    writedate   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,     
+    readcount   INT(11) NOT NULL,      
+    
+    CONSTRAINT shotel_board_pk PRIMARY KEY (id),
+    CONSTRAINT shotel_board_user_id_fk FOREIGN KEY (userid) REFERENCES shotel_user (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+# -- INSERT INTO shotel_board VALUES (shotel_board_seq.nextval, ...);
+
+INSERT INTO shotel_board(userid, type, title, content, writedate, readcount)
+            VALUES (1, 1, '공지사항제목1', '공지사항내용1', now(), 0);
+INSERT INTO shotel_board(userid, type, title, content, writedate, readcount)
+            VALUES (1, 1, '공지사항제목2', '공지사항내용2', now(), 0);
+INSERT INTO shotel_board(userid, type, title, content, writedate, readcount)
+            VALUES (1, 1, '공지사항제목3', '공지사항내용3', now(), 0);
+INSERT INTO shotel_board(userid, type, title, content, writedate, readcount)
+            VALUES (1, 1, '공지사항제목4', '공지사항내용4', now(), 0);
+INSERT INTO shotel_board(userid, type, title, content, writedate, readcount)
+            VALUES (1, 1, '공지사항제목5', '공지사항내용5', now(), 0);
+
+
+INSERT INTO shotel_board(userid, type, title, content, writedate, readcount)
+            VALUES (1, 2, '이벤트제목1', '이벤트내용1', now(), 0);
+INSERT INTO shotel_board(userid, type, title, content, writedate, readcount)
+            VALUES (1, 2, '이벤트제목2', '이벤트내용2', now(), 0);
+INSERT INTO shotel_board(userid, type, title, content, writedate, readcount)
+            VALUES (1, 2, '이벤트제목3', '이벤트내용3', now(), 0);
+INSERT INTO shotel_board(userid, type, title, content, writedate, readcount)
+            VALUES (1, 2, '이벤트제목4', '이벤트내용4', now(), 0);
+INSERT INTO shotel_board(userid, type, title, content, writedate, readcount)
+            VALUES (1, 2, '이벤트제목5', '이벤트내용5', now(), 0);
+
+
+
+
+INSERT INTO shotel_board(userid, type, title, content, writedate, readcount) 
+			VALUES (1, 3, '방명록제목1', '방명록내용1', now(), 0);
+
+
+commit;
+
+
+
+
+
+# -------------------------------
+# -- 게시판 첨부파일
+# -------------------------------
+
+CREATE TABLE shotel_board_file (
+    id          INT(11) NOT NULL AUTO_INCREMENT,
+    boardid INT(11) NOT NULL,   
+    filename        VARCHAR(256) NOT NULL,  
+    savedfilename   VARCHAR(256) NOT NULL, 
+    filesize    INT(11) NOT NULL,      
+    CONSTRAINT shotel_board_file_pk PRIMARY KEY (id),
+    CONSTRAINT shotel_board_file_aid_fk FOREIGN KEY (boardid) REFERENCES shotel_board (id) on delete cascade
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+# -------------------------------
+#-- 쿼리 샘플
+#-------------------------------
+
+
+#-- INSERT INTO shotel_board_file VALUES (shotel_board_file_seq.nextval, ...);
+
+
+INSERT INTO shotel_board_file(boardid, filename, savedfilename, filesize) VALUES (1, 'event01.jpg', 'event01.jpg', 248000);
+INSERT INTO shotel_board_file(boardid, filename, savedfilename, filesize) VALUES (2, 'event02.jpg', 'event02.jpg', 248000);
+INSERT INTO shotel_board_file(boardid, filename, savedfilename, filesize) VALUES (3, 'event03.jpg', 'event03.jpg', 248000);
+INSERT INTO shotel_board_file(boardid, filename, savedfilename, filesize) VALUES (4, 'event04.jpg', 'event04.jpg', 248000);
+INSERT INTO shotel_board_file(boardid, filename, savedfilename, filesize) VALUES (5, 'event05.jpg', 'event05.jpg', 248000);
+
+commit;
+
+
+# -------------------------------
+# -- 게시판 댓글
+# -------------------------------
+
+CREATE TABLE shotel_board_reply (
+    id          INT(11) NOT NULL AUTO_INCREMENT,
+    boardid INT(11) NOT NULL,   
+    userid      INT(11) NOT NULL,
+    content     VARCHAR(400) NOT NULL,  
+    writeDate   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,        
+
+    CONSTRAINT shotel_board_reply_pk PRIMARY KEY (id),
+    CONSTRAINT shotel_board_reply_bid_fk FOREIGN KEY (boardid) REFERENCES shotel_board (id) on delete cascade,
+    CONSTRAINT shotel_board_reply_uid_fk FOREIGN KEY (userid) REFERENCES shotel_user (id) on delete cascade
+);
+
+
+# -------------------------------
+# -- 쿼리 샘플
+# -------------------------------
+
+# -- INSERT INTO shotel_board_reply VALUES (shotel_board_reply_seq.nextval, 11, 1, '댓글내용1', sysdate);
+
+INSERT INTO shotel_board_reply(boardid, userid, content, writedate)
+                 VALUES (1, 1, '댓글내용1', now());
+
+
+
+
+
+# ----------------------------------------------------------------------------------------------------------
+# -- 방 정보
+# -------------------------------
+
+CREATE TABLE shotel_room_type (
+    id          INT(11) NOT NULL AUTO_INCREMENT,   
+    type        INT(11) NOT NULL,       
+    maxpax      INT(11) NOT NULL,       
+    cost        INT(11) NOT NULL,       
+    CONSTRAINT shotel_room_type PRIMARY KEY (id)
+);
+
+# -------------------------------
+# -- 방 정보 첨부 파일
+# -------------------------------
+
+CREATE TABLE shotel_room_file (
+    id          INT(11) NOT NULL AUTO_INCREMENT,       
+    roomtypeid      INT(11) NOT NULL,      
+    filename    VARCHAR(70) NOT NULL,   
+    CONSTRAINT shotel_room_file_pk PRIMARY KEY (id),
+    CONSTRAINT shotel_room_file_rtype_id_fk FOREIGN KEY (roomtypeid) REFERENCES shotel_room_type (id) on delete cascade
+);
+
+# -------------------------------
+# -- 방 현황
+# -------------------------------
+CREATE TABLE shotel_room (
+    id          INT(11) NOT NULL AUTO_INCREMENT,    
+    roomtypeid      INT(11) NOT NULL,   
+    roomNum     INT(11) NOT NULL,       
+    CONSTRAINT shotel_room PRIMARY KEY (id),
+    CONSTRAINT shotel_room_rtype_id_fk FOREIGN KEY (roomtypeid) REFERENCES shotel_room_type (id) on delete cascade
+);
+
+# -------------------------------
+# -- 방 평가
+# -------------------------------
+
+CREATE TABLE shotel_room_eval (
+    id          INT(11) NOT NULL AUTO_INCREMENT,     
+    userid      INT(11) NOT NULL,       -- 작성자 고유번호
+    rate        INT(11) NOT NULL,       -- 평점 (만점은 안정함)
+    content     VARCHAR(80) NOT NULL,   -- 한줄평
+    write_date  DATE NOT NULL,          -- 작성일
+    CONSTRAINT shotel_room_eval_pk PRIMARY KEY (id),
+    CONSTRAINT shotel_room_eval_user_id_fk FOREIGN KEY (userid) REFERENCES shotel_user (id) on delete cascade
+);
+
+# -------------------------------
+# -- 쿼리 샘플
+# -------------------------------
+
+# -- INSERT INTO shotel_room_type VALUES (shotel_room_seq_type.nextval, ...);
+# -- INSERT INTO shotel_room_file VALUES (shotel_room_file_seq.nextval, ...);
+# -- INSERT INTO shotel_room_eval VALUES (shotel_room_eval_seq.nextval, ...);
+
+
+
+INSERT INTO shotel_room_type(type, maxpax, cost) VALUES (1,  2,  10);
+INSERT INTO shotel_room_type(type, maxpax, cost) VALUES (2,  4,  20);
+INSERT INTO shotel_room_type(type, maxpax, cost) VALUES (3,  6,  30);
+INSERT INTO shotel_room_type(type, maxpax, cost) VALUES (4,  8,  40);
+INSERT INTO shotel_room_type(type, maxpax, cost) VALUES (5,  10, 50);
+
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (1, 'standard1.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (1, 'standard2.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (1, 'standard3.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (2, 'deluxe1.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (2, 'deluxe2.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (2, 'deluxe3.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (3, 'twin-deluxe1.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (3, 'twin-deluxe2.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (3, 'twin-deluxe3.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (4, 'superior1.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (4, 'superior2.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (4, 'superior3.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (5, 'luxury1.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (5, 'luxury2.jpg');
+INSERT INTO shotel_room_file(roomtypeid, filename) VALUES (5, 'luxury3.jpg');
+
+
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (1, 101);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (1, 102);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (1, 103);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (1, 104);
+
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (2, 201);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (2, 202);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (2, 203);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (2, 204);
+
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (3, 301);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (3, 302);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (3, 303);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (3, 304);
+
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (4, 401);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (4, 402);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (4, 403);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (4, 404);
+
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (5, 401);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (5, 402);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (5, 403);
+INSERT INTO shotel_room(roomtypeid, roomNum) VALUES (5, 404);
+
+
+
+
+commit;
+
+
+
+
+# ----------------------------------------------------------------------------------------------------------
+# -- 예약
+# -------------------------------
+
+CREATE TABLE shotel_reserve (
+    id          INT(11) NOT NULL AUTO_INCREMENT,
+    userId      INT(11) NOT NULL,
+    roomId      INT(11) NOT NULL,
+    dateStart   DATE NOT NULL,
+    dateEnd     DATE NOT NULL,
+    dateReserve TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    pax         INT(11) NOT NULL,
+    breakfast   INT(1) NOT NULL,
+    CONSTRAINT shotel_reserve_pk PRIMARY KEY (id),
+    CONSTRAINT shotel_reserve_user_id_fk FOREIGN KEY (userid) REFERENCES shotel_user (id) on delete cascade,
+    CONSTRAINT shotel_reserve_room_id_fk FOREIGN KEY (roomid) REFERENCES shotel_room (id) on delete cascade
+);
+
+# -------------------------------
+# -- 쿼리 샘플
+# -------------------------------
+
+# -- INSERT INTO shotel_reserve VALUES (shotel_reserve_seq.nextval, ...);
+
+INSERT INTO shotel_reserve(userId, roomId, dateStart, dateEnd, dateReserve, pax, breakfast)
+                 VALUES (1, 1, '2017/01/10', '2017/01/15', now(), 2, 1);
+# -- INSERT INTO shotel_reserve VALUES (shotel_reserve_seq.nextval, 1, 2, '2017/01/20', '2017/01/25', sysdate, 3, 1);
+commit;
+
+
+
+
+

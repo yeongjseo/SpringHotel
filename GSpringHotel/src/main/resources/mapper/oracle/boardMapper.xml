@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="boardMapper">
+    
+    <sql id="condition">
+		<if test="paging.searchKey.length() != 0">
+			and ${paging.searchKey} like '%' || #{paging.searchVal} || '%'
+		</if>
+	</sql>
+    
+	<resultMap id="memberMap" type="com.springhotel.dto.MemberDTO">
+		<id property="id" column="id"/>
+	    <result property="account" column="account"/>
+	</resultMap>
+   
+	 <resultMap id="fileMap" type="com.springhotel.dto.BoardFileDTO">
+		<id property="id" column="fileId"/>
+	    <result property="boardId" column="boardId"/>
+	    <result property="filename" column="filename"/>
+	    <result property="savedFilename" column="savedFilename"/>
+	    <result property="filesize" column="filesize"/>
+	</resultMap>
+	
+	<resultMap id="boardMap" type="com.springhotel.dto.BoardDTO">
+		<result property="id" column="id"/>
+		<result property="userId" column="userId"/>
+		<result property="type" column="type"/>
+		<result property="title" column="title"/>
+		<result property="content" column="content"/>
+		<result property="writeDate" column="writeDate"/>
+		<result property="writeTime" column="writeTime"/>
+		<result property="readCount" column="readCount"/>
+		<association property="memberDTO" column="id" javaType="com.springhotel.dto.MemberDTO" resultMap="memberMap"/>
+		
+		<collection property="boardFileDTO" column="boardId" ofType="com.springhotel.dto.BoardFileDTO" 
+		    		javaType="ArrayList" resultMap="fileMap"/>
+	</resultMap>
+    
+    
+	<select id="countBoard" parameterType="hashmap" resultType="int">
+		select count(*) from shotel_board b, shotel_user u  
+			where b.userid=u.id and type = #{boardType} 
+				<include refid="condition"></include>
+	</select>
+
+	<!-- 
+	<select id="listBoard" parameterType="hashmap" resultType="com.springhotel.dto.BoardDTO">
+		select * from ( 
+			select rownum rn, t.* from (
+				select * from shotel_board where type = #{boardType} 
+					<include refid="condition"></include>
+					order by id desc
+			) t 
+		) where rn between #{paging.rowStart} and #{paging.rowEnd} order by id desc
+	</select> 
+	-->
+ 
+	<select id="listBoard" parameterType="hashmap" resultType="com.springhotel.dto.BoardDTO">
+		<!--     
+		select b.*, to_char (writeDate,  'yyyy/mm/dd hh24:mi:ss') as writeTime, u.account from (
+			select * from ( 
+				select rownum rn, t.* from ( 
+					select * from shotel_board where type = #{boardType} 
+					<include refid="condition"></include> 
+					order by id desc 
+				) t
+			) where rn between #{paging.rowStart} and #{paging.rowEnd} order by id desc
+		) b, shotel_user u where b.userid = u.id
+		-->
+		
+		select * from (
+  			select rownum rn, b.* from (
+      			select b.*, to_char (writeDate,  'yyyy/mm/dd hh24:mi:ss') as writeTime, u.account 
+      			from shotel_board b, shotel_user u
+      			where type=#{boardType} and b.userid=u.id 
+      				<include refid="condition"></include> 
+      			order by b.id desc
+  			) b
+		) where rn between #{paging.rowStart} and #{paging.rowEnd}
+		
+	</select> 
+
+	<!-- 
+	<select id="readBoard" parameterType="hashmap" resultMap="boardMap">
+		 select b.*, u.account from shotel_board b, shotel_user u
+			 where b.type = #{boardType} and b.id = #{boardId} and b.userid = u.id
+	</select>
+	 -->
+	 
+	 <!-- 
+	<select id="readBoard" parameterType="hashmap" resultMap="boardMap">
+		 select b.*, u.account, f.id as fileId, f.boardId, f.filename, f.savedFilename, f.filesize
+		 	 from shotel_board b, shotel_user u, shotel_board_file f
+			 where b.type = #{boardType} and b.id = #{boardId} and b.userid = u.id and b.id = f.boardId
+	</select>
+	-->
+	<select id="readBoard" parameterType="hashmap" resultMap="boardMap">
+		select bu.*, f.id as fileId, f.boardId, f.filename, f.savedFilename, f.filesize from (
+			select b.*, to_char (writeDate,  'yyyy/mm/dd hh24:mi:ss') as writeTime, u.account from 
+				shotel_board b, shotel_user u 
+					where b.type = #{boardType} and b.id =  #{boardId} and b.userid = u.id
+		) bu left outer join shotel_board_file f on bu.id = f.boardId
+	</select>
+	
+	
+	
+	<select id="increaseReadCount" parameterType="hashmap">
+		update shotel_board set readCount=readCount+1 where id=#{boardId} and type=#{boardType}
+	</select>
+
+	<select id="insertBoard" parameterType="com.springhotel.dto.BoardDTO">
+		insert into shotel_board values (shotel_board_seq.nextval, 
+					#{userId}, #{type}, #{title}, #{content}, sysdate, 0)
+	</select>
+	
+	<select id="insertBoardByNextVal" parameterType="com.springhotel.dto.BoardDTO">
+		insert into shotel_board values (#{id},	 
+					#{userId}, #{type}, #{title}, #{content}, sysdate, 0)
+	</select>
+	
+	<select id="updateBoard" parameterType="com.springhotel.dto.BoardDTO">
+		update shotel_board set userId=#{userId}, type=#{type}, title=#{title}, 
+					content=#{content} where id=#{id}
+	</select>
+	
+	<select id="deleteBoard" parameterType="hashmap">
+		delete from shotel_board where id=#{boardId}
+	</select>
+	
+	<select id="nextVal" resultType="Integer">
+		select shotel_board_seq.nextval from dual
+	</select>
+	
+	<select id="insertFile" parameterType="com.springhotel.dto.BoardFileDTO">
+		insert into shotel_board_file values (shotel_board_file_seq.nextval, 
+					#{boardId}, #{filename}, #{savedFilename}, #{filesize})
+	</select>
+		
+	<select id="readFile" parameterType="int" resultType="com.springhotel.dto.BoardFileDTO">
+		 select * from shotel_board_file where id=#{fildId}
+	</select>
+	
+	<select id="listFile" parameterType="int" resultType="com.springhotel.dto.BoardFileDTO">
+		select * from shotel_board_file where boardId=#{boardId}	
+	</select>
+
+	<select id="deleteFile" parameterType="int">
+		delete from shotel_board_file where id=#{fileId}
+	</select>
+
+	
+	<select id="countReply" parameterType="hashmap" resultType="int">
+		select count(*) from shotel_board_reply 
+			where boardId = #{boardId}
+				<include refid="condition"></include>    
+	</select>
+ 
+	<select id="listReply" parameterType="hashmap" resultType="com.springhotel.dto.BoardReplyDTO">
+		<!-- 
+		select * from ( 
+			select rownum rn, t.* from (
+				select * from shotel_board_reply where boardId = #{boardId} 
+					<include refid="condition"></include>
+					order by id desc
+			) t
+		) where rn between #{paging.rowStart} and #{paging.rowEnd} order by id desc
+		-->
+		select b.*, to_char (writeDate,  'yyyy/mm/dd hh24:mi:ss') as writeTime, u.account as writer from (
+			select * from (
+		    	select rownum rn, t.* from ( 
+					select * from shotel_board_reply where boardId = #{boardId} 
+						<include refid="condition"></include>
+					order by id desc 
+				) t
+			) where rn between 1 and 10  order by id desc
+		) b, shotel_user u where b.userid = u.id
+		
+	</select>
+	 
+	<select id="insertReply" parameterType="com.springhotel.dto.BoardReplyDTO">
+		insert into shotel_board_reply values (shotel_board_reply_seq.nextval, 
+					#{boardId}, #{userId}, #{content}, sysdate)
+	</select>	
+
+	<select id="readReply" parameterType="int" resultType="com.springhotel.dto.BoardReplyDTO">
+		select * from shotel_board_reply where id=#{id}
+	</select>	
+
+
+	<select id="updateReply" parameterType="com.springhotel.dto.BoardReplyDTO">
+		update shotel_board_reply set boardId=#{boardId}, userId=#{userId}, 
+						content=#{content} where id=#{id}
+	</select>
+	
+	<select id="deleteReply" parameterType="int">
+		delete from shotel_board_reply where id=#{id}
+	</select>
+
+
+
+
+
+	
+</mapper>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taglib xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="htttp://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee/web-jsptaglibrary_2_0.xsd"
+	version="2.0">
+	<tlib-version>1.0</tlib-version>
+	<jsp-version>1.2</jsp-version>  
+	<short-name>m</short-name>
+	<uri>/WEB-INF/mytags.tld</uri>
+	<function>
+		<name>getBoardTypeLongDesc</name>
+		<function-class>com.springhotel.dto.BoardDTO</function-class>
+		<function-signature>
+			java.lang.String getBoardTypeLongDesc(java.lang.String)
+		</function-signature>
+	</function>
+	
+	<function>
+		<name>makeQuery</name>
+		<function-class>com.springhotel.dto.PagingDTO</function-class>
+		<function-signature>
+			java.lang.String makeQuery(com.springhotel.dto.PagingDTO, int)
+		</function-signature>
+	</function>
+	
+	
+	<function>
+		<name>dayFormatter</name>
+		<function-class>com.springhotel.common.CommonUtil</function-class>
+		<function-signature>
+			java.lang.String dayFormatter(java.sql.Date)
+		</function-signature>
+	</function>
+	
+	<function>
+		<name>monFormatter</name>
+		<function-class>com.springhotel.common.CommonUtil</function-class>
+		<function-signature>
+			java.lang.String monFormatter(java.sql.Date)
+		</function-signature>
+	</function>
+
+	<function>
+		<name>compareString</name>
+		<function-class>com.springhotel.common.CommonUtil</function-class>
+		<function-signature>
+			boolean compareString(java.lang.String, java.lang.String)
+		</function-signature>
+	</function>
+	
+</taglib>

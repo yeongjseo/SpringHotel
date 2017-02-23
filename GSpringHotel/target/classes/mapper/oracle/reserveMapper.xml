@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="reserveMapper">
+    
+    <sql id="condition">
+		<if test="paging.searchKey.length() != 0">
+			and ${paging.searchKey} like '%' || #{paging.searchVal} || '%'
+		</if>
+	</sql>
+    
+    <sql id="dateCondition">
+    	<![CDATA[
+			(#{dateStart} >= dateStart and #{dateStart} <  dateEnd) or 
+			(#{dateStart} <= dateStart and #{dateEnd}   >= dateEnd) or 
+			(#{dateEnd}   >  dateStart and #{dateEnd}   <= dateEnd)
+		]]>
+	</sql>
+    
+    <resultMap id="memberMap" type="com.springhotel.dto.MemberDTO">
+		<id property="id" column="uid"/>
+	    <result property="account" column="account"/>
+	</resultMap>
+    
+    
+    
+    <resultMap id="roomFileMap" type="com.springhotel.dto.RoomFileDTO">
+		<id property="id" column="rfid"/>
+	    <result property="roomTypeId" column="roomTypeid"/>
+	    <result property="filename" column="filename"/>
+	</resultMap>
+    
+
+	 <resultMap id="roomTypeMap" type="com.springhotel.dto.RoomTypeDTO">
+		<id property="id" column="rtid"/>
+	 	<result property="rn" column="rn"/>		
+	    <result property="type" column="type"/>
+	    <result property="maxPax" column="maxPax"/>
+	    <result property="cost" column="cost"/>
+	    <collection property="files" column="rfid" ofType="com.springhotel.dto.RoomFileDTO" 
+		    		javaType="ArrayList" resultMap="roomFileMap"/>
+	</resultMap>
+	
+	<resultMap id="roomMap" type="com.springhotel.dto.RoomDTO">
+		<result property="rn" column="rn"/>
+		<result property="id" column="rid"/>
+		<result property="roomTypeId" column="roomTypeId"/>
+		<result property="roomNum" column="roomNum"/>
+		<association property="roomTypeDTO" column="rtid" javaType="com.springhotel.dto.RoomTypeDTO" resultMap="roomTypeMap"/>
+	</resultMap>
+	
+	<resultMap id="reserveMap" type="com.springhotel.dto.ReserveDTO">
+	    <result property="rn" column="rn"/>
+	    <result property="id" column="reid"/>
+	    <result property="roomId" column="roomId"/>
+	    <result property="dateStart" column="dateStart"/>
+	    <result property="dateEnd" column="dateEnd"/>
+	    <result property="dateReserve" column="dateReserve"/>
+	    <result property="timeReserve" column="timeReserve"/>
+	    <result property="pax" column="pax"/>
+	    <result property="breakfast" column="breakfast"/>
+	    <association property="roomTypeDTO" column="rtid" javaType="com.springhotel.dto.RoomTypeDTO" resultMap="roomTypeMap"/>
+	    <association property="roomDTO" column="rid" javaType="com.springhotel.dto.RoomDTO" resultMap="roomMap"/>
+	    <association property="memberDTO" column="uid" javaType="com.springhotel.dto.MemberDTO" resultMap="memberMap"/>
+	    <association property="roomFileDTO" column="rfid" javaType="com.springhotel.dto.RoomFileDTO" resultMap="roomFileMap"/>
+	</resultMap>
+
+	<resultMap id="reserveSubMap" type="com.springhotel.dto.ReserveDTO">
+	    <id property="id" column="reid"/>
+	    <result property="rn" column="rn"/>
+	    <result property="id" column="reid"/>
+	    <result property="roomId" column="roomId"/>
+	    <result property="dateStart" column="dateStart"/>
+	    <result property="dateEnd" column="dateEnd"/>
+	    <result property="dateReserve" column="dateReserve"/>
+	    <result property="pax" column="pax"/>
+	    <result property="breakfast" column="breakfast"/>
+	</resultMap>
+	
+	<resultMap id="roomReserveMap" type="com.springhotel.dto.RoomDTO">
+		<result property="rn" column="rn"/>
+		<result property="id" column="id"/>
+		<result property="roomTypeId" column="roomTypeId"/>
+		<result property="roomNum" column="roomNum"/>
+		<association property="roomTypeDTO" column="rtid" javaType="com.springhotel.dto.RoomTypeDTO" resultMap="roomTypeMap"/>
+		<collection property="reserveDTO" column="reid" ofType="com.springhotel.dto.ReserveDTO" 
+		    		javaType="ArrayList" resultMap="reserveSubMap"/>
+	</resultMap>
+    
+    
+	<select id="countReserve" parameterType="hashmap" resultType="int">
+		select count(*) 
+		from shotel_reserve re, shotel_user u, shotel_room r, shotel_room_type rt, shotel_room_file rf 
+    	where re.userId = u.id and re.roomId = r.id and r.roomTypeId = rt.id and rf.id = r.roomTypeId
+		<include refid="condition"></include>    
+	</select>
+ 
+	<select id="listReserve" parameterType="hashmap" resultMap="reserveMap">
+	    <!-- 
+		select re.rn, re.id reid, re.roomId, re.dateStart, re.dateEnd, re.dateReserve, re.pax, re.breakfast, 
+			u.account, r.roomTypeId, r.roomNum, rt.type, rf.filename from (
+			select * from (
+				select rownum rn, r.* from (
+					select * from shotel_reserve 
+						<include refid="condition"></include>
+						order by id
+				) r
+			) where rn between #{paging.rowStart} and #{paging.rowEnd}
+		) re, shotel_user u, shotel_room r, shotel_room_type rt, shotel_room_file rf
+			where re.userId = u.id and re.roomId = r.id and r.roomTypeId = rt.id and rf.id = r.roomTypeId
+		 -->	
+			
+		select * from (
+  			select rownum rn, a.* from ( 
+    			select re.id reid, re.roomId, re.dateStart, re.dateEnd, re.pax, re.breakfast,
+    					to_char (re.dateReserve,  'yyyy/mm/dd hh24:mi:ss') as timeReserve,
+    					u.account, r.roomTypeId, r.roomNum, rt.type, rf.filename
+    			from shotel_reserve re, shotel_user u, shotel_room r, shotel_room_type rt, shotel_room_file rf 
+    			where re.userId = u.id and re.roomId = r.id and r.roomTypeId = rt.id and rf.id = r.roomTypeId
+    			<include refid="condition"></include>
+    			order by re.id
+  			) a
+		) where rn between 1 and 10
+			
+			
+	</select> 
+
+	<select id="listReserveByMemberId" parameterType="int" resultMap="reserveMap">
+		select re.id reid, re.roomId, re.dateStart, re.dateEnd, re.pax, re.breakfast,
+		 	to_char (re.dateReserve,  'yyyy/mm/dd hh24:mi:ss') as timeReserve,
+			u.account, r.roomTypeId, r.roomNum, rt.type, rf.filename from (
+			select * from shotel_reserve where userId = #{memberId}  
+		) re, shotel_user u, shotel_room r, shotel_room_type rt, shotel_room_file rf
+			where re.userId = u.id and re.roomId = r.id and r.roomTypeId = rt.id and rf.id = r.roomTypeId
+	</select>
+	
+	<select id="selectReserveById" parameterType="hashmap" resultMap="reserveMap">
+		select re.id reid, re.roomId, re.dateStart, re.dateEnd, re.pax, re.breakfast, 
+			to_char (re.dateReserve,  'yyyy/mm/dd hh24:mi:ss') as timeReserve,
+			u.account, r.roomTypeId, r.roomNum, rt.type, rf.filename from (
+			select * from shotel_reserve where id=#{reserveId}  
+		) re, shotel_user u, shotel_room r, shotel_room_type rt, shotel_room_file rf
+			where re.userId = u.id and re.roomId = r.id and r.roomTypeId = rt.id and rf.id = r.roomTypeId
+	</select>
+	
+
+	<select id="insertReserve" parameterType="com.springhotel.dto.ReserveDTO">
+		insert into shotel_reserve values (shotel_reserve_seq.nextval, 
+			#{userId}, #{roomId}, #{dateStart}, #{dateEnd}, sysdate, #{pax}, #{breakfast})
+	</select>
+	
+	
+	<select id="nextVal" resultType="Integer">
+		select shotel_reserve_seq.nextval from dual
+	</select>
+	
+	<select id="insertReserveByNextVal" parameterType="com.springhotel.dto.ReserveDTO">
+		insert into shotel_reserve values (#{id}, 
+			#{userId}, #{roomId}, #{dateStart}, #{dateEnd}, sysdate, #{pax}, #{breakfast})
+	</select>
+
+	<select id="updateReserve" parameterType="com.springhotel.dto.ReserveDTO">
+		update shotel_reserve set userId=#{userId}, roomId=#{roomId}, dateStart=#{dateStart}, 
+			dateEnd=#{dateEnd}, pax=#{pax}, breakfast=#{breakfast} where id=#{id}
+	</select>
+	
+	<select id="deleteReserve" parameterType="hashmap">
+		delete from shotel_reserve where id=#{reserveId}
+	</select>
+
+	
+	<select id="countRoomType" parameterType="hashmap" resultType="int">
+		select count(*) from shotel_room_type
+				<include refid="condition"></include>    
+	</select>	
+	
+	<select id="listRoomType" parameterType="hashmap" resultMap="roomTypeMap">
+		select rt1.rn, rt1.id as rtid, rt1.type, rt1.maxPax, rt1.cost, rf.id as rfid, rf.roomtypeid, rf.filename from (
+			select * from (
+				select rownum rn, rt.* from (
+					select * from shotel_room_type 
+						<include refid="condition"></include>
+					order by id
+				) rt
+			) where rn between #{paging.rowStart} and #{paging.rowEnd} 
+		) rt1, shotel_room_file rf where rt1.id = rf.roomTypeId
+	</select>	
+	
+	
+	<select id="listVacantRoomType" parameterType="com.springhotel.dto.SearchDTO" resultMap="roomTypeMap">
+		select rt.id rtid, rt.type, rt.maxpax, rt.cost, rf.id rfid, rf.roomtypeId, rf.filename from (
+			select *  from shotel_room_type where type in ( 
+				select distinct(roomTypeId) from ( 
+					select * from shotel_room where id not in ( 
+						select roomId from shotel_reserve where 
+							<include refid="dateCondition"></include>
+					) 
+				) 
+			) order by type
+		) rt, shotel_room_file rf where rt.type = rf.roomtypeid
+		
+	</select>
+	
+	<select id="selectAnyVacantRoom" parameterType="com.springhotel.dto.SearchDTO" resultType="com.springhotel.dto.RoomDTO">
+		select * from (
+			select rownum rn, r.* from (
+				select * from shotel_room where id not in ( 
+					select roomId from shotel_reserve where (
+						<include refid="dateCondition"></include>
+					) 
+				) and roomTypeId=${roomType} ORDER by roomNum
+			) r
+		) where rn = 1
+	</select>
+			
+	<select id="listRoomByReserve" parameterType="com.springhotel.dto.SearchDTO" resultMap="roomReserveMap">
+		select rrt.*, re.id as reid, re.userId, re.roomId, re.dateStart, re.dateEnd, re.dateReserve from (
+			select r.id, r.ROOMNUM, r.ROOMTYPEID, rt.TYPE, rt.MAXPAX, rt.COST  from shotel_room r, shotel_room_type rt where r.ROOMTYPEID = rt.id
+			order by r.id
+		) rrt left outer join  (
+	  		select * from shotel_reserve where (
+	      		<include refid="dateCondition"></include>
+			)
+		) re on rrt.id = re.roomId
+	</select>
+		
+	
+	
+	
+	
+	
+	
+	
+</mapper>

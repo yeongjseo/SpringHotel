@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="roomMapper">
+    
+    <resultMap id="roomFileMap" type="com.springhotel.dto.RoomFileDTO">
+		<id property="id" column="rfid"/>
+	    <result property="roomTypeId" column="roomTypeid"/>
+	    <result property="filename" column="filename"/>
+	</resultMap>
+    
+
+	 <resultMap id="roomTypeMap" type="com.springhotel.dto.RoomTypeDTO">
+		<id property="id" column="rtid"/>
+	 	<result property="rn" column="rn"/>		
+	    <result property="type" column="type"/>
+	    <result property="maxPax" column="maxPax"/>
+	    <result property="cost" column="cost"/>
+	    <collection property="files" column="rfid" ofType="com.springhotel.dto.RoomFileDTO" 
+		    		javaType="ArrayList" resultMap="roomFileMap"/>
+	</resultMap>
+	
+	<resultMap id="roomMap" type="com.springhotel.dto.RoomDTO">
+		<result property="rn" column="rn"/>
+		<result property="id" column="id"/>
+		<result property="roomTypeId" column="roomTypeId"/>
+		<result property="roomNum" column="roomNum"/>
+		<association property="roomTypeDTO" column="rtid" javaType="com.springhotel.dto.RoomTypeDTO" resultMap="roomTypeMap"/>
+	</resultMap>
+    
+    
+	<select id="countRoom" parameterType="hashmap" resultType="int">
+		select count(*) from shotel_room
+				<include refid="commonMapper.pagingCondition"></include>    
+	</select>
+ 
+	<select id="listRoom" parameterType="hashmap" resultMap="roomMap">
+
+		select r.*, rt.id as rtid, rt.type, rt.maxpax, rt.cost from (
+			select r.* from (
+				select @rnum:=@rnum+1 as rn, r.* from (
+					select * from shotel_room 
+						<include refid="commonMapper.pagingCondition"></include>
+						order by id
+				) r, (select @rnum:=0) rnum
+			) r where rn between #{rowStart} and #{rowEnd}
+		) r, shotel_room_type rt where r.roomtypeid = rt.id
+	</select> 
+
+	<select id="readRoom" parameterType="hashmap" resultMap="roomMap">
+		select bu.*, f.id as fileId, f.RoomId, f.filename, f.savedFilename, f.filesize from (
+			select b.*, u.account from 
+				shotel_room b, shotel_user u 
+					where b.type = #{RoomType} and b.id =  #{RoomId} and b.userid = u.id
+		) bu left outer join shotel_room_file f on bu.id = f.RoomId
+	</select>
+	
+
+	<select id="insertRoom" parameterType="com.springhotel.dto.RoomDTO">
+		insert into shotel_room(userId, type, title, content) 
+				values(#{userId}, #{type}, #{title}, #{content}, now(), 0)
+	</select>
+	
+
+	<select id="updateRoom" parameterType="com.springhotel.dto.RoomDTO">
+		update shotel_room set userId=#{userId}, type=#{type}, title=#{title}, 
+					content=#{content} where id=#{id}
+	</select>
+	
+	<select id="deleteRoom" parameterType="hashmap">
+		delete from shotel_room where id=#{RoomId}
+	</select>
+
+	
+	<select id="countRoomType" parameterType="hashmap" resultType="int">
+		select count(*) from shotel_room_type
+				<include refid="commonMapper.pagingCondition"></include>    
+	</select>	
+	
+	<select id="listRoomType" parameterType="hashmap" resultMap="roomTypeMap">
+	    <!--
+	    select rt.rn, rt.id as rtid, rt.type, rt.maxPax, rt.cost, rf.id as rfid, rf.roomtypeid, rf.filename from ( 
+			select rt.* from ( 
+				select @rnum := @rnum + 1 as rn, rt.* from ( 
+					select * from shotel_room_type 
+					order by id 
+				) rt, ( select @rnum := 0 ) r
+			) rt where rn between 1 and 10 
+		) rt, shotel_room_file rf where rt.id = rf.roomTypeId;
+	    -->
+	    
+		select rt.rn, rt.id as rtid, rt.type, rt.maxPax, rt.cost, rf.id as rfid, rf.roomtypeid, rf.filename from ( 
+			select rt.* from ( 
+				select @rnum := @rnum + 1 as rn, rt.* from ( 
+					select * from shotel_room_type 
+						<include refid="commonMapper.pagingCondition"></include>
+					order by id
+				) rt, ( select @rnum := 0 ) r
+			) rt where rn between #{rowStart} and #{rowEnd} 
+		) rt, shotel_room_file rf where rt.id = rf.roomTypeId
+	</select>	
+	
+	
+	
+	
+	
+	
+	
+	
+</mapper>
